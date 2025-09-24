@@ -1,9 +1,14 @@
-const { Telegraf } = require("telegraf");
+const { Telegraf, Markup } = require("telegraf");
 const { message } = require("telegraf/filters");
 import { PrismaClient } from "./generated/prisma";
 import { Keypair } from "@solana/web3.js";
 
 const prismaClient = new PrismaClient();
+
+const DEFAULT_KEYBOARD = Markup.inlineKeyboard([
+  Markup.button.callback("Show public key", "public_key"),
+  Markup.button.callback("Show private key", "private_key"),
+]);
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
 bot.start(async (ctx) => {
@@ -26,14 +31,39 @@ bot.start(async (ctx) => {
       data: {
         tgUserId: ctx.chat.id.toString(),
         publicKey: keypair.publicKey.toBase58(),
-        privateKey: JSON.stringify(keypair.secretKey),
+        privateKey: keypair.secretKey.toBase64(),
       },
     });
     const publickey = keypair.publicKey.toString();
     ctx.reply(
-      `Welcome to SolBot! 🎉 Your public key: ${publickey}\n\nNow the real flex 👉 load it up with some SOL if you’re man enough. No guts, no glory 🔥💸`
+      `Welcome to SolBot! 🎉 Your public key: ${publickey}\n\nNow the real flex 👉 load it up with some SOL if you’re man enough. No guts, no glory 🔥💸 .`,
+      {
+        ...DEFAULT_KEYBOARD,
+      }
     );
   }
+});
+
+bot.action("public_key", async (ctx) => {
+  const user = await prismaClient.user.findFirst({
+    where: {
+      tgUserId: ctx.chat?.id.toString(),
+    },
+  });
+  return ctx.reply(`Your public key is : ${user?.publicKey}`, {
+    ...DEFAULT_KEYBOARD,
+  });
+});
+
+bot.action("private_key", async (ctx) => {
+  const user = await prismaClient.user.findFirst({
+    where: {
+      tgUserId: ctx.chat?.id.toString(),
+    },
+  });
+  return ctx.reply(`Your private key is : ${user?.privateKey}`, {
+    ...DEFAULT_KEYBOARD,
+  });
 });
 
 bot.launch();
