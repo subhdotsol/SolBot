@@ -1,12 +1,16 @@
 const { Telegraf, Markup } = require("telegraf");
 const { message } = require("telegraf/filters");
 import { PrismaClient } from "./generated/prisma";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, Connection } from "@solana/web3.js";
+
+// connecting to the solana RPC node
+const connection = new Connection(process.env.RPC_URL!);
 
 const prismaClient = new PrismaClient();
 
+// adding inline Keyboard in our telegram bot
 const DEFAULT_KEYBOARD = Markup.inlineKeyboard([
-  Markup.button.callback("Show public key", "public_key"),
+  Markup.button.callback("Show public key", "public_key"), // first is placeholder , second is action name
   Markup.button.callback("Show private key", "private_key"),
 ]);
 
@@ -44,6 +48,7 @@ bot.start(async (ctx) => {
   }
 });
 
+// calling what happens when the action button is triggered
 bot.action("public_key", async (ctx) => {
   const user = await prismaClient.user.findFirst({
     where: {
